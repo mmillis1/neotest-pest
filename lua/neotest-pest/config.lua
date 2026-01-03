@@ -16,12 +16,16 @@ local M = {
         test_file_suffixes = { "Test.php" },
         sail_executable = "vendor/bin/sail",
         sail_project_path = "/var/www/html",
+        ddev_executable = "ddev",
+        ddev_project_path = "/var/www/html",
         parallel = 0,
         compact = false,
     },
 
     _sail_error = false,
     _sail_enabled = false,
+    _ddev_error = false,
+    _ddev_enabled = false,
 }
 
 function M.env.sail_enabled()
@@ -40,6 +44,10 @@ function M.env.is_parallel()
 end
 
 function M.env.pest_cmd()
+    if M('ddev_enabled') then
+        return { "ddev", "exec", "vendor/bin/pest" }
+    end
+
     if M('sail_enabled') then
         return { "vendor/bin/sail", "bin", "pest" }
     end
@@ -48,6 +56,10 @@ function M.env.pest_cmd()
 end
 
 function M.env.results_path()
+    if M('ddev_enabled') then
+        return "storage/app/" .. os.date("pest-%Y%m%d-%H%M%S")
+    end
+
     if M('sail_enabled') then
         return "storage/app/" .. os.date("pest-%Y%m%d-%H%M%S")
     end
@@ -67,6 +79,28 @@ function M.sail_available()
 
     M._sail_error = true
     logger.debug("Sail executable not found")
+end
+
+function M.ddev_error()
+    return M._ddev_error
+end
+
+function M.ddev_available()
+    if vim.fn.isdirectory('.ddev') == 1 and vim.fn.executable('ddev') == 1 then
+        M._ddev_enabled = true
+        return true
+    end
+
+    M._ddev_error = true
+    logger.debug("ddev not available")
+end
+
+function M.env.ddev_enabled()
+    if M._ddev_enabled then
+        return true
+    end
+
+    return M.ddev_available()
 end
 
 function M.merge(env)
