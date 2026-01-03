@@ -1,19 +1,24 @@
 # neotest-pest
 
-This plugin provides a [Pest](https://pestphp.com) adapter for the [Neotest](https://github.com/nvim-neotest/neotest) framework.
+This plugin provides a [Pest](https://pestphp.com) adapter for [Neotest](https://github.com/nvim-neotest/neotest) framework.
 
 This is a fork of `neotest-pest` originally by [@theutz](https://github.com/theutz/neotest-pest), with some fixes and updates:
 
-- Updated to work with [Pest](https://pestphp.com) 2.0
+- Updated to work with [Pest](https://pestphp.com) 3.x and 4.x
+  - Uses updated treesitter queries for proper test discovery
 - Support for (and automatic detection of) Laravel Sail
   - Note: This also moves junit output files into `storage/app/`
+- Support for (and automatic detection of) [DDEV](https://ddev.com)
+  - Tests run via `ddev exec vendor/bin/pest` inside containers
+  - Results stored in `storage/app/` for accessibility
 - Parallel testing support
 
-:warning: _Ive only focused on making this work for me. Please test against your Pest tests_ :warning:
+> [!NOTE]
+> This fork includes Pest 3.x/4.x support (via updated treesitter queries) and DDEV integration. Tested with Pest 4.x and DDEV environments. Please test against your Pest tests and report any issues!
 
 ## :package: Installation
 
-Install the plugin using your favorite package manager.
+Install plugin using your favorite package manager.
 
 Here's an example using lazy.nvim:
 
@@ -21,8 +26,7 @@ Here's an example using lazy.nvim:
 {
     'nvim-neotest/neotest',
     dependencies = {
-        ...,
-        'V13Axel/neotest-pest',
+        { 'mmillis1/neotest-pest', branch = 'pest-v4-ddev-support' },
     },
     config = function()
         require('neotest').setup({
@@ -34,6 +38,9 @@ Here's an example using lazy.nvim:
     end
 }
 ```
+
+> [!NOTE]
+> This fork includes Pest 3.x/4.x support and DDEV integration. Use the `pest-v4-ddev-support` branch to get these features.
 
 ## :wrench: Configuration
 
@@ -69,6 +76,18 @@ adapters = {
         -- -- Default: "/var/www/html"
         sail_project_path = "/var/www/html",
 
+        -- DDEV not properly detected? Explicitly enable it.
+        -- -- Default: function() that checks for .ddev directory and ddev command
+        ddev_enabled = function() return false end,
+
+        -- Custom ddev executable.
+        -- -- Default: "ddev"
+        ddev_executable = "ddev",
+
+        -- Custom ddev project root path.
+        -- -- Default: "/var/www/html"
+        ddev_project_path = "/var/www/html",
+
         -- Custom pest binary.
         -- -- Default: function that checks for sail presence
         pest_cmd = "vendor/bin/pest",
@@ -87,9 +106,9 @@ adapters = {
         -- NOTE: This must be a path accessible by both your test runner AND your editor! --
         ------------------------------------------------------------------------------------
         --
-        -- -- Default: function that checks for sail presence.
-        -- --      - If no sail: Numbered file in randomized /tmp/ directory (using async.fn.tempname())
-        -- --      - If sail: "storage/app/" .. os.date("junit-%Y%m%d-%H%M%S")
+        -- -- Default: function that checks for sail/ddev presence.
+        -- --      - If no sail/ddev: Numbered file in randomized /tmp/ directory (using async.fn.tempname())
+        -- --      - If sail/ddev: "storage/app/" .. os.date("junit-%Y%m%d-%H%M%S")
         results_path = function() "/some/accessible/path" end,
     }),
 }
@@ -124,6 +143,16 @@ To test a directory run `lua require('neotest').run.run("path/to/directory")`
 #### Test suite
 
 To test the full test suite run `lua require('neotest').run.run({ suite = true })`
+
+### DDEV Projects
+
+This adapter automatically detects DDEV projects by looking for:
+- `.ddev` directory in your project root
+- `ddev` command available in your PATH
+
+When DDEV is detected, tests run via `ddev exec vendor/bin/pest` inside the container, and results are stored in `storage/app/` for accessibility both inside and outside the container.
+
+No additional configuration needed - just ensure your project has `.ddev` directory and you can run `ddev` from your terminal.
 
 ## :gift: Contributing
 
